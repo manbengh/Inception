@@ -1,0 +1,19 @@
+FROM debian:bookworm
+
+# met a jour la liste des paquets
+RUN apt update && apt install -y mariadb-server \
+    && rm -rf /var/lib/apt/lists/*
+
+# prepare le dossier necessaire pour MariaDB
+RUN mkdir -p /run/mysqld && chown -R mysql:mysql /var/run/mysqld
+
+COPY tools/start_mariadb.sh /usr/local/bin/start_mariadb.sh
+
+RUN chmod +x /usr/local/bin/start_mariadb.sh
+
+EXPOSE 3306
+
+#USER mysql
+
+CMD ["/usr/local/bin/start_mariadb.sh"]
+

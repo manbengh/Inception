@@ -5,11 +5,15 @@ RUN apt update && apt install -y mariadb-server \
     && rm -rf /var/lib/apt/lists/*
 
 # prepare le dossier necessaire pour MariaDB
-RUN mkdir -p /run/mysqld && chown -R mysql:mysql /var/run/mysqld
+#RUN mkdir -p /run/mysqld && chown -R mysql:mysql /var/run/mysqld
 
 COPY tools/start_mariadb.sh /usr/local/bin/start_mariadb.sh
 
 RUN chmod +x /usr/local/bin/start_mariadb.sh
+
+#RUN printf "[mysqld]\nbind-address=0.0.0.0\nport=3306\n" \
+   # > /etc/mysql/mariadb.conf.d/50-server.cnf
+
 
 EXPOSE 3306
 

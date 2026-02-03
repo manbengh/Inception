@@ -1,0 +1,48 @@
+#!/bin/bash
+set -e
+
+
+# Préparer les dossiers nécessaires
+mkdir -p /run/mysqld /var/lib/mysql 
+chown -R mysql:mysql /run/mysqld /var/lib/mysql
+
+# Set default paths if not provided
+#MYSQL_ROOT_PASSWORD_FILE="${MYSQL_ROOT_PASSWORD_FILE:-/run/secrets/db_root_password}"
+#MYSQL_PASSWORD_FILE="${MYSQL_PASSWORD_FILE:-/run/secrets/db_password}"
+
+#ROOT_PASS=$(cat "$MYSQL_ROOT_PASSWORD_FILE")
+#USER_PASS=$(cat "$MYSQL_PASSWORD_FILE")
+
+if [ ! -d "/var/lib/mysql/mysql${MYSQL_DATABASE}" ]; then
+    echo ">> Initialisation de MariaDB"
+
+    # Init base vide
+    mysqld --initialize-insecure --user=mysql --datadir=/var/lib/mysql
+
+    # Demarrage temporaire pour config
+    mysqld --bind-address=0.0.0.0 --user=mysql &
+    MARIADB_PID=$!
+
+    # Attendre que le serveur soit pret
+    until mysqladmin ping --silent; do
+        sleep 1
+    done
+
+    echo ">> Création de la base et des utilisateurs"
+    mysql -u root <<EOF
+ALTER USER 'root'@'localhost' IDENTIFIED BY '${ROOT_PASS}';
+CREATE DATABASE IF NOT EXISTS ${MYSQL_DATABASE};
+DROP USER IF EXISTS '${MYSQL_USER}'@'localhost';
+DROP USER IF EXISTS '${MYSQL_USER}'@'%';
+CREATE USER '${MYSQL_USER}'@'%' IDENTIFIED BY '${USER_PASS}';
+GRANT ALL PRIVILEGES ON ${MYSQL_DATABASE}.* TO '${MYSQL_USER}'@'%';
+FLUSH PRIVILEGES;
+EOF
+
+    # Arret propre
+    mysqladmin -u root -p"${ROOT_PASS}" shutdown
+    wait $MARIADB_PID || true
+fi
+
+echo ">> MariaDB prêt, lancement en foreground"
+exec mysqld_safe --bind-address=0.0.0.0 --user=mysql

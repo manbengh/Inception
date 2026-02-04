@@ -3,38 +3,30 @@ version: "3.8"
 services: #def des services (containers)
   mariadb:
     build: ./requirements/mariadb
-    container_name: mariadb
-    restart: always #redemarrage auto si crash
-    volumes:
-      - mariadb_data:/var/lib/mysql
-    networks:
-      - inception
     env_file:
       - .env
     secrets:
       - db_password
       - db_root_password
+    environment:
+      MYSQL_PASSWORD_FILE: /run/secrets/db_password
+      MYSQL_ROOT_PASSWORD_FILE: /run/secrets/db_root_password
+
 
   wordpress:
     build: ./requirements/wordpress
-    container_name: wordpress
-    restart: always
-    env_file: #docker injecte autoT tout variable(pas mdp)
+    env_file:
       - .env
-    volumes:
-      - wordpress:/var/www/html
-    networks:
-      - inception
-    secrets: #pas mdp dans .env ou Dockerfile
+    secrets:
       - db_password
       - credentials
-    depends_on: #evite WD demarre sans mariadb
-      - mariadb
+    environment:
+      MYSQL_PASSWORD_FILE: /run/secrets/db_password
+
 
 
   nginx:
     build: ./requirements/nginx
-    container_name: nginx
     restart: always
     env_file: #docker injecte autoT tout variable(pas mdp)
       - .env

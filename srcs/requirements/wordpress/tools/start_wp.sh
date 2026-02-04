@@ -8,9 +8,17 @@ USER_PASS=$(cat "$WP_USER_PASSWORD_FILE")
 mkdir -p /run/php
 cd /var/www/html
 
+
+until getent hosts mariadb; do
+  echo ">> Attente DNS MariaDB..."
+  sleep 1
+done
+
+
+
 # Attendre MariaDB avant d'installer WordPress
 until php -r "
-\$mysqli = new mysqli('mariadb', '$MYSQL_USER', '$DB_PASS', '$MYSQL_DATABASE');
+\$mysqli = new mysqli('mariadb', '$MYSQL_USER', '$DB_PASS', '$MYSQL_DATABASE', 3306);
 exit(\$mysqli->connect_errno);
 "; do
     echo ">> En attente de MariaDB..."

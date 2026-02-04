@@ -1,51 +1,43 @@
 #!/bin/bash
 set -e
 
-# -------------------------------
-# Script de démarrage MariaDB
-# -------------------------------
+mkdir -p /run/mysqld
+chown -R mysql:mysql /run/mysqld
 
-# Variables par défaut si pas passées
-: "${MYSQL_DATABASE:=wordpress}"
-: "${MYSQL_USER:=wp_user}"
-: "${MYSQL_PASSWORD:=wp_pass}"
-: "${MYSQL_ROOT_PASSWORD:=root_pass}"
+ROOT_PASS=$(cat "$MYSQL_ROOT_PASSWORD_FILE")
+USER_PASS=$(cat "$MYSQL_PASSWORD_FILE")
 
-#  Préparer les dossiers nécessaires
-mkdir -p /run/mysqld /var/lib/mysql
-chown -R mysql:mysql /run/mysqld /var/lib/mysql
-
-#  Initialiser la base si nécessaire
 if [ ! -d "/var/lib/mysql/mysql" ]; then
-    echo ">> Initialisation de MariaDB..."
-    
-    # Initialise la base sans mot de passe root
-    mysqld --initialize-insecure --user=mysql --datadir=/var/lib/mysql
+  echo ">> Initialisation MariaDB"
 
-    # Démarrage temporaire en arrière-plan
-    mysqld --user=mysql --bind-address=0.0.0.0 &
-    MARIADB_PID=$!
+  mysqld --initialize-insecure --user=mysql --datadir=/var/lib/mysql
 
-    # Attendre que MariaDB soit prêt
-    until mysqladmin ping --silent; do
-        echo ">> En attente que MariaDB démarre..."
-        sleep 1
-    done
+  mysqld_safe &
+  until mysqladmin ping --silent; do
+    sleep 1
+  done
 
-    echo ">> Création de la base et des utilisateurs..."
-    mysql -u root <<EOF
-ALTER USER 'root'@'localhost' IDENTIFIED BY '${MYSQL_ROOT_PASSWORD}';
-CREATE DATABASE IF NOT EXISTS \`${MYSQL_DATABASE}\`;
-CREATE USER IF NOT EXISTS '${MYSQL_USER}'@'%' IDENTIFIED BY '${MYSQL_PASSWORD}';
-GRANT ALL PRIVILEGES ON \`${MYSQL_DATABASE}\`.* TO '${MYSQL_USER}'@'%';
+  mysql <<EOF
+
+ALTER USER 'root'@'localhost' IDENTIFIED BY '${ROOT_PASS}';
+
+CREATE DATABASE IF NOT EXISTS ${MYSQL_DATABASE};
+
+DROP USER IF EXISTS '${MYSQL_USER}'@'%';
+DROP USER IF EXISTS '${MYSQL_USER}'@'localhost';
+
+CREATE USER '${MYSQL_USER}'@'%' IDENTIFIED BY '${USER_PASS}';
+GRANT ALL PRIVILEGES ON ${MYSQL_DATABASE}.* TO '${MYSQL_USER}'@'%';
 FLUSH PRIVILEGES;
+
+
 EOF
 
-    # Arrêt propre du serveur temporaire
-    mysqladmin -u root -p"${MYSQL_ROOT_PASSWORD}" shutdown
-    wait $MARIADB_PID || true
+  mysqladmin shutdown
 fi
 
-#  Lancement MariaDB en foreground
-echo ">> MariaDB prêt, lancement en foreground..."
-exec mysqld_safe --user=mysql --bind-address=0.0.0.0
+echo ">> MariaDB prêt"
+exec mysqld_safe --user=mysql --bind-address=0.0.0.0 \
+--datadir=/var/lib/mysql
+
+

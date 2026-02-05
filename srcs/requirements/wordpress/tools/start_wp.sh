@@ -1,54 +1,40 @@
 #!/bin/bash
 set -e
 
-DB_PASS=$(cat "$MYSQL_PASSWORD_FILE")
-ADMIN_PASS=$(cat "$WP_ADMIN_PASSWORD_FILE")
-USER_PASS=$(cat "$WP_USER_PASSWORD_FILE")
-
+cd /var/www/html/wordpress
 mkdir -p /run/php
-cd /var/www/html
 
-
-until getent hosts mariadb; do
-  echo ">> Attente DNS MariaDB..."
-  sleep 1
+until mysqladmin ping -h"$WORDPRESS_DB_HOST" -u"$WORDPRESS_DB_USER" -p"$WORDPRESS_DB_PASSWORD" --silent; do
+  echo "Waiting for MariaDB..."
+  sleep 2
 done
 
+# force php-fpm à écouter sur TCP
+sed -i "s|listen = .*|listen = 0.0.0.0:9000|g" /etc/php/8.2/fpm/pool.d/www.conf
 
-
-# Attendre MariaDB avant d'installer WordPress
-until php -r "
-\$mysqli = new mysqli('mariadb', '$MYSQL_USER', '$DB_PASS', '$MYSQL_DATABASE', 3306);
-exit(\$mysqli->connect_errno);
-"; do
-    echo ">> En attente de MariaDB..."
-    sleep 2
-done
-
-# Installer wp-config.php si absent
 if [ ! -f wp-config.php ]; then
-    echo ">> Configuration WordPress"
+  wp config create \
+    --dbname="$WORDPRESS_DB_NAME" \
+    --dbuser="$WORDPRESS_DB_USER" \
+    --dbpass="$WORDPRESS_DB_PASSWORD" \
+    --dbhost="$WORDPRESS_DB_HOST" \
+    --allow-root
 
-    wp config create \
-        --allow-root \
-        --dbname="$MYSQL_DATABASE" \
-        --dbuser="$MYSQL_USER" \
-        --dbpass="$DB_PASS" \
-        --dbhost="mariadb"
+  wp core install \
+    --url=https://manbengh.42.fr \
+    --title="$WP_TITLE" \
+    --admin_user="$WP_ADMIN_USER" \
+    --admin_password="$WP_ADMIN_PASSWORD" \
+    --admin_email="$WP_ADMIN_EMAIL" \
+    --allow-root
 
-    wp core install \
-        --allow-root \
-        --url="https://$DOMAIN_NAME" \
-        --title="$WP_TITLE" \
-        --admin_user="$WP_ADMIN_USER" \
-        --admin_password="$ADMIN_PASS" \
-        --admin_email="$WP_ADMIN_EMAIL"
-
-    wp user create \
-        "$WP_USER" "$WP_USER_EMAIL" \
-        --allow-root \
-        --user_pass="$USER_PASS"
+  wp user create "$WP_USER" "$WP_USER_EMAIL" \
+    --user_pass="$WP_USER_PASSWORD" \
+    --allow-root
 fi
 
-echo ">> WordPress prêt"
-exec php-fpm8.2 -F
+# Ajuster les permissions
+chown -R www-data:www-data /var/www/html
+chmod -R 755 /var/www/html
+
+exec php-fpm8.2 -F 

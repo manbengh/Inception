@@ -4,40 +4,33 @@ set -e
 mkdir -p /run/mysqld
 chown -R mysql:mysql /run/mysqld
 
-ROOT_PASS=$(cat "$MYSQL_ROOT_PASSWORD_FILE")
-USER_PASS=$(cat "$MYSQL_PASSWORD_FILE")
-
+# Initialiser si data dir vide
 if [ ! -d "/var/lib/mysql/mysql" ]; then
-  echo ">> Initialisation MariaDB"
-
-  mysqld --initialize-insecure --user=mysql --datadir=/var/lib/mysql
-
-  mysqld_safe &
-  until mysqladmin ping --silent; do
-    sleep 1
-  done
-
-  mysql <<EOF
-
-ALTER USER 'root'@'localhost' IDENTIFIED BY '${ROOT_PASS}';
-
-CREATE DATABASE IF NOT EXISTS ${MYSQL_DATABASE};
-
-DROP USER IF EXISTS '${MYSQL_USER}'@'%';
-DROP USER IF EXISTS '${MYSQL_USER}'@'localhost';
-
-CREATE USER '${MYSQL_USER}'@'%' IDENTIFIED BY '${USER_PASS}';
-GRANT ALL PRIVILEGES ON ${MYSQL_DATABASE}.* TO '${MYSQL_USER}'@'%';
-FLUSH PRIVILEGES;
-
-
-EOF
-
-  mysqladmin shutdown
+    echo ">> Initialisation MariaDB data dir"
+    mariadb-install-db --user=mysql --datadir=/var/lib/mysql
 fi
 
+# Lancer MariaDB en background
+mysqld --user=mysql --bind-address=0.0.0.0 &
+
+# Attendre qu'il soit prêt
+until mysqladmin ping --silent; do
+    echo "Waiting for MariaDB..."
+    sleep 2
+done
+
+# Init DB + user
+echo ">> Initialisation SQL"
+
+mysql -u root <<EOF
+ALTER USER 'root'@'localhost' IDENTIFIED BY '${MYSQL_ROOT_PASSWORD}';
+CREATE DATABASE IF NOT EXISTS ${MYSQL_DATABASE};
+CREATE USER IF NOT EXISTS '${MYSQL_USER}'@'%' IDENTIFIED BY '${MYSQL_PASSWORD}';
+GRANT ALL PRIVILEGES ON ${MYSQL_DATABASE}.* TO '${MYSQL_USER}'@'%';
+FLUSH PRIVILEGES;
+EOF
+
 echo ">> MariaDB prêt"
-exec mysqld_safe --user=mysql --bind-address=0.0.0.0 \
---datadir=/var/lib/mysql
 
-
+# garder process principal
+wait

@@ -8,13 +8,13 @@ if [ ! -f "$SSL_DIR/server.crt" ]; then
     -newkey rsa:4096 \
     -keyout "$SSL_DIR/server.key" \
     -out "$SSL_DIR/server.crt" \
-    -subj "/C=FR/ST=IDF/L=Paris/O=42/CN=ahbey.42.fr"
+    -subj "/C=FR/ST=IDF/L=Paris/O=42/CN=manbengh.42.fr"
 fi
 
-until getent hosts wordpress; do
-  echo ">> En attente de WordPress..."
-  sleep 1
-done
+# until getent hosts wordpress; do
+#   echo ">> En attente de WordPress..."
+#   sleep 1
+# done
 
 
 exec nginx -g "daemon off;"

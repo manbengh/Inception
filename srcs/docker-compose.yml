@@ -1,69 +1,62 @@
-version: "3.8"
+services:
 
-services: #def des services (containers)
   mariadb:
+    container_name: mariadb
     build: ./requirements/mariadb
-    env_file:
-      - .env
-    secrets:
-      - db_password
-      - db_root_password
-    environment:
-      MYSQL_PASSWORD_FILE: /run/secrets/db_password
-      MYSQL_ROOT_PASSWORD_FILE: /run/secrets/db_root_password
-
-
-  wordpress:
-    build: ./requirements/wordpress
-    env_file:
-      - .env
-    secrets:
-      - db_password
-      - credentials
-    environment:
-      MYSQL_PASSWORD_FILE: /run/secrets/db_password
-
-
-
-  nginx:
-    build: ./requirements/nginx
+    image: image-mariadb
     restart: always
-    env_file: #docker injecte autoT tout variable(pas mdp)
+    env_file:
       - .env
     volumes:
-      - wordpress:/var/www/html
+      - mariadb_data:/var/lib/mysql
     networks:
       - inception
-    ports: #seul avec port(sujet)
-      - "443:443"
-    depends_on: #evite NGINX demarre sans WP
+
+  wordpress:
+    container_name: wordpress
+    build: ./requirements/wordpress
+    image: image-wordpress
+    depends_on:
+      - mariadb
+    restart: always
+    env_file:
+      - .env
+    volumes:
+      - wordpress_data:/var/www/html
+    networks:
+      - inception
+
+  nginx:
+    container_name: nginx
+    build: ./requirements/nginx
+    image: image-nginx
+    depends_on:
       - wordpress
+    restart: always
+    ports:
+      - "443:443"
+    volumes:
+      - wordpress_data:/var/www/html
+    networks:
+      - inception
 
 
-
-networks: #def des reseaux Docker
-  inception:
-    driver: bridge #reseau interne Docker
-
-volumes: #def des volumes Docker
+volumes:
   mariadb_data:
     driver: local
     driver_opts:
       type: none
-      device: /home/vboxuser/data/mariadb #chemin sur VM ou donnes stockees
+      device: /home/manbengh/data/mariadb
       o: bind
 
-  wordpress:
+  wordpress_data:
     driver: local
     driver_opts:
       type: none
-      device: /home/vboxuser/data/wordpress
+      device: /home/manbengh/data/wordpress
       o: bind
 
-secrets:
-  db_password:
-    file : ../secrets/db_password.txt
-  credentials:
-    file: ../secrets/credentials.txt
-  db_root_password:
-    file: ../secrets/db_root_password.txt
+
+networks:
+  inception:
+    driver: bridge

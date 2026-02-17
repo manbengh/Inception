@@ -5,6 +5,7 @@ services:
     build: ./requirements/mariadb
     image: image-mariadb
     restart: always
+
     env_file:
       - .env
     volumes:

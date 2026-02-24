@@ -3,9 +3,8 @@ services:
   mariadb:
     container_name: mariadb
     build: ./requirements/mariadb
-    image: image-mariadb
+    image: mariadb:v1.0
     restart: always
-
     env_file:
       - .env
     volumes:
@@ -16,7 +15,7 @@ services:
   wordpress:
     container_name: wordpress
     build: ./requirements/wordpress
-    image: image-wordpress
+    image: wordpress:v1.0
     depends_on:
       - mariadb
     restart: always
@@ -30,7 +29,7 @@ services:
   nginx:
     container_name: nginx
     build: ./requirements/nginx
-    image: image-nginx
+    image: nginx:v1.0
     depends_on:
       - wordpress
     restart: always

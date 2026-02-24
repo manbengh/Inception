@@ -37,24 +37,6 @@ cd <repository_folder>
 
 - Set up .env (make sure WordPress and MariaDB variables match):
 
-MYSQL_DATABASE=wordpress
-MYSQL_USER=wpuser
-MYSQL_PASSWORD=wppass
-MYSQL_ROOT_PASSWORD=passroot
-
-WORDPRESS_DB_NAME=wordpress
-WORDPRESS_DB_USER=wpuser
-WORDPRESS_DB_PASSWORD=wppass
-WORDPRESS_DB_HOST=mariadb
-
-WP_ADMIN_USER=manbengh42
-WP_ADMIN_PASSWORD=passmanbengh
-WP_ADMIN_EMAIL=manbengh@student.42.fr
-
-WP_USER=visit
-WP_USER_PASSWORD=visitpass
-WP_USER_EMAIL=visit@student.42.fr
-
 WARNING ! If you change .env, delete volumes to apply changes:
 
 make down -v
@@ -74,10 +56,6 @@ make down
 - Access WordPress admin: https://manbengh.42.fr/wp-admin/
 
 - Self-signed SSL warning: click Advanced → Proceed anyway
-
-- Login:
-Admin: manbengh42 / passmanbengh
-Visitor: visit / visitpass
 
 - Troubleshoot:
 

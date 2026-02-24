@@ -16,7 +16,7 @@ make up
 make down
 
 
-Accessing the Website and Admin Panel
+## Accessing the Website and Admin Panel
 
 Website: https://manbengh.42.fr
 
@@ -27,25 +27,12 @@ WordPress admin panel: https://manbengh.42.fr/wp-admin/
 
 
 
--- Credentials
+## Credentials
 
-- Admin account:
-
-  Username: manbengh42
-
-  Password: passmanbengh
-
-- Visitor account:
-
-  Username: visit
-
-  Password: visitpass
-
-- Credentials are defined in the .env file.
+- Credentials are defined in the - srcs/.env file.
 
 
-
--- Verifying Services
+## Verifying Services
 
 - Check running containers:
 

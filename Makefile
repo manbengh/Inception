@@ -16,6 +16,7 @@ erase:
 	make down
 	docker volume rm srcs_mariadb_data srcs_wp_data || true
 	sudo rm -rf $(DATA_DIR)
+	docker compose -f $(DOCKER_COMPOSE_FILE) build --no-cache
 	make up
 
 re:
